@@ -69,6 +69,7 @@ You should use these libraries with Cesium.Viewer's baseLayerPicker property as 
 
 * [Cesium:WebGL Virtual Globe and Map Engine](http://cesiumjs.org/index.html)
 * [国土地理院地図タイル / Japan GSI tile API](http://portal.cyberjapan.jp/help/development/ichiran.html)
+* [サンプル / Example](http://t.tilemap.jp.s3.amazonaws.com/cesium/index.html)
 
 
 
