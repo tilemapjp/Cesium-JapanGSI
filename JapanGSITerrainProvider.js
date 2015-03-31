@@ -17,6 +17,7 @@ var
 
     var trailingSlashRegex = /\/$/;
     var defaultCredit = new Credit('国土地理院');
+    var GSI_MAX_TERRAIN_LEVEL = 14;
 
     var JapanGSITerrainProvider = function JapanGSITerrainProvider(options) {
         options = defaultValue(options, {});
@@ -45,7 +46,7 @@ var
         };
 
         this._levelZeroMaximumGeometricError = TerrainProvider.getEstimatedLevelZeroGeometricErrorForAHeightmap(this._tilingScheme.ellipsoid, this._heightmapWidth, this._tilingScheme.getNumberOfXTilesAtLevel(0));
-       
+
         this._errorEvent = new Event();
 
         var credit = defaultValue(options.credit, defaultCredit);
@@ -59,9 +60,9 @@ var
         var orgx = x;
         var orgy = y;
         var shift = 0;
-        if (level > 15) {
-            shift = level - 15;
-            level = 15;
+        if (level > GSI_MAX_TERRAIN_LEVEL) {
+            shift = level - GSI_MAX_TERRAIN_LEVEL;
+            level = GSI_MAX_TERRAIN_LEVEL;
         }
 
         x >>= shift+1;
@@ -70,7 +71,7 @@ var
         var shifty = (orgy % Math.pow(2, shift)) / Math.pow(2, shift);
 
         var url = this._url + level + '/' + x + '/' + y + '.txt';
-      
+
         var proxy = this._proxy;
         if (defined(proxy)) {
             url = proxy.getURL(url);
@@ -119,7 +120,7 @@ var
                 width:         self._heightmapWidth,
                 height:        self._heightmapWidth,
                 structure:     self._terrainDataStructure,
-                childTileMask: 15
+                childTileMask: GSI_MAX_TERRAIN_LEVEL
             });
         });
     };
