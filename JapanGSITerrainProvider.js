@@ -17,12 +17,12 @@ var
 
     var trailingSlashRegex = /\/$/;
     var defaultCredit = new Credit('国土地理院');
-    var GSI_MAX_TERRAIN_LEVEL = 14;
+    var GSI_MAX_TERRAIN_LEVEL = 15;
 
     var JapanGSITerrainProvider = function JapanGSITerrainProvider(options) {
         options = defaultValue(options, {});
 
-        var url = defaultValue(options.url, '//cyberjapandata.gsi.go.jp/xyz/dem/');
+        var url = defaultValue(options.url, '//cyberjapandata.gsi.go.jp/xyz/dem');
 
         if (!trailingSlashRegex.test(url)) {
             url = url + '/';
@@ -70,7 +70,8 @@ var
         var shiftx = (orgx % Math.pow(2, shift + 1)) / Math.pow(2, shift + 1);
         var shifty = (orgy % Math.pow(2, shift)) / Math.pow(2, shift);
 
-        var url = this._url + level + '/' + x + '/' + y + '.txt';
+        var url = this._url + (level == 15 ? '5a' : '') +
+          '/' + level + '/' + x + '/' + y + '.txt';
 
         var proxy = this._proxy;
         if (defined(proxy)) {
@@ -163,4 +164,3 @@ var
 
     Cesium.JapanGSITerrainProvider = JapanGSITerrainProvider;
 })();
-
