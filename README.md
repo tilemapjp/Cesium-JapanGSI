@@ -1,15 +1,11 @@
 Cesium-JapanGSI
 ===============
 
-このフォークの特徴
----------------
-https://github.com/gsi-cyberjapan/elevation-php/blob/master/getelevation.php に示されている「dem5a」も活用して、特に都市域で詳しく地形が見えるようにしています。
-
 概要(Abstruct)
 --------------
 
 国土地理院の地図系APIをCesiumで利用可能にするライブラリ群です。  
-Libraries which make Japan GSI's APIs can be used with Cesium. 
+Libraries which make Japan GSI's APIs can be used with Cesium.
 
 ### JapanGSIImageryProvider
 
@@ -68,6 +64,8 @@ If you want to emphasize height of terrain, you can give powering value by this 
 前者は、falseにしないと、Cesium標準の地図セット切り替えコントロールが出てきてしまい、設定した地図タイル、地形が反映されません。  
 後者は、trueにしないと、地形の地面の下に描画した地物も、透けて見えてしまいます。  
 You should use these libraries with Cesium.Viewer's baseLayerPicker property as false and viewer.scene.globe.depthTestAgainstTerrain property as true.
+
+https://github.com/gsi-cyberjapan/elevation-php/blob/master/getelevation.php に示されている「dem5a」も活用して、特に都市域で詳しく地形が見えるようにしています。
 
 ### 参照 / See other
 
