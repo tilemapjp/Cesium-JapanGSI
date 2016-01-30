@@ -24,9 +24,11 @@ var
 
         var url = defaultValue(options.url, '//cyberjapandata.gsi.go.jp/xyz/dem');
 
+/*
         if (!trailingSlashRegex.test(url)) {
             url = url + '/';
         }
+*/
 
         this._url = url;
         this._proxy = options.proxy;
