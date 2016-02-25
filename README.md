@@ -5,14 +5,14 @@ Cesium-JapanGSI
 --------------
 
 国土地理院の地図系APIをCesiumで利用可能にするライブラリ群です。  
-Libraries which make Japan GSI's APIs can be used with Cesium. 
+Libraries which make Japan GSI's APIs can be used with Cesium.
 
 ### JapanGSIImageryProvider
 
 国土地理院の提供する地図画像タイル群から、好きなレイヤを組み合わせてCesiumの地図タイルレイヤを生成するライブラリです。  
 Cesium's image tile provider from Japan GSI's map image tile service.
 
-#### プロパティ / Property 
+#### プロパティ / Property
 
 * layerLists
 
@@ -65,12 +65,10 @@ If you want to emphasize height of terrain, you can give powering value by this 
 後者は、trueにしないと、地形の地面の下に描画した地物も、透けて見えてしまいます。  
 You should use these libraries with Cesium.Viewer's baseLayerPicker property as false and viewer.scene.globe.depthTestAgainstTerrain property as true.
 
+https://github.com/gsi-cyberjapan/elevation-php/blob/master/getelevation.php に示されている「dem5a」も活用して、特に都市域で詳しく地形が見えるようにしています。
+
 ### 参照 / See other
 
 * [Cesium:WebGL Virtual Globe and Map Engine](http://cesiumjs.org/index.html)
 * [国土地理院地図タイル / Japan GSI tile API](http://portal.cyberjapan.jp/help/development/ichiran.html)
 * [サンプル / Example](http://t.tilemap.jp.s3.amazonaws.com/cesium/index.html)
-
-
-
-
