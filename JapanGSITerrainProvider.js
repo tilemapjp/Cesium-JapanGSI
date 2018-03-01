@@ -83,10 +83,14 @@ var
         var promise;
 
         throttleRequests = defaultValue(throttleRequests, true);
-        if (throttleRequests) {
-            promise = throttleRequestByServer(url, loadText);
-            if (!defined(promise)) {
-                return undefined;
+        if ( throttleRequestByServer ){ // Patch for > CESIUM1.35
+            if (throttleRequests) {
+                promise = throttleRequestByServer(url, loadText);
+                if (!defined(promise)) {
+                    return undefined;
+                }
+            } else {
+                promise = loadText(url);
             }
         } else {
             promise = loadText(url);
