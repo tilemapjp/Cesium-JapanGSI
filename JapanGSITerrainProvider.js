@@ -5,6 +5,7 @@ var
     defined = Cesium.defined,
     defineProperties = Cesium.defineProperties,
     loadText = Cesium.loadText,
+    loadImage = Cesium.loadImage,
     throttleRequestByServer = Cesium.throttleRequestByServer,
     Event = Cesium.Event,
     Credit = Cesium.Credit,
@@ -22,7 +23,15 @@ var
     var JapanGSITerrainProvider = function JapanGSITerrainProvider(options) {
         options = defaultValue(options, {});
 
-        var url = defaultValue(options.url, '//cyberjapandata.gsi.go.jp/xyz/dem');
+        this._usePngData = defaultValue(options.usePngData,true);
+        var url;
+        if ( this._usePngData ){
+            url = defaultValue(options.url, 'https://cyberjapandata.gsi.go.jp/xyz/dem_png'); // use https to disable google chrome's data saver for prevent bluring imagg.
+            this._loadDataFunction = loadImage;
+        } else {
+            url  = defaultValue(options.url, '//cyberjapandata.gsi.go.jp/xyz/dem');
+            this._loadDataFunction = loadText;
+        }
 
 /*
         if (!trailingSlashRegex.test(url)) {
@@ -59,6 +68,7 @@ var
     };
 
     JapanGSITerrainProvider.prototype.requestTileGeometry = function(x, y, level, throttleRequests) {
+        var usePngData = this._usePngData;
         var orgx = x;
         var orgy = y;
         var shift = 0;
@@ -72,8 +82,14 @@ var
         var shiftx = (orgx % Math.pow(2, shift + 1)) / Math.pow(2, shift + 1);
         var shifty = (orgy % Math.pow(2, shift)) / Math.pow(2, shift);
 
-        var url = this._url + (level == 15 ? '5a' : '') +
-          '/' + level + '/' + x + '/' + y + '.txt';
+        var url;
+        if ( usePngData ){
+            url = this._url + (level == 15 ? '5a' : '') +
+                '/' + level + '/' + x + '/' + y + '.png';
+        } else {
+            url = this._url + (level == 15 ? '5a' : '') +
+                '/' + level + '/' + x + '/' + y + '.txt';
+        }
 
         var proxy = this._proxy;
         if (defined(proxy)) {
@@ -85,28 +101,65 @@ var
         throttleRequests = defaultValue(throttleRequests, true);
         if ( throttleRequestByServer ){ // Patch for > CESIUM1.35
             if (throttleRequests) {
-                promise = throttleRequestByServer(url, loadText);
+                promise = throttleRequestByServer(url, this._loadDataFunction);
                 if (!defined(promise)) {
                     return undefined;
                 }
             } else {
-                promise = loadText(url);
+                promise = this._loadDataFunction(url);
             }
         } else {
-            promise = loadText(url);
+            promise = this._loadDataFunction(url, null, new Cesium.Request({throttle:true}));
         }
 
         var self = this;
         return when(promise, function(data) {
             var heightCSV = [];
-            var LF = String.fromCharCode(10);
-            var lines = data.split(LF);
-            for (var i=0; i<lines.length; i++){
-                var heights = lines[i].split(",");
-                for (var j=0; j<heights.length; j++){
-                    if (heights[j] == "e") heights[j] = 0;
+            var heights = [];
+            if ( usePngData ){
+                var canvas = document.createElement("canvas");
+                canvas.width  = "256";
+                canvas.height = "256";
+                var cContext = canvas.getContext('2d');
+                cContext.mozImageSmoothingEnabled = false;
+                cContext.webkitImageSmoothingEnabled = false;
+                cContext.msImageSmoothingEnabled = false;
+                cContext.imageSmoothingEnabled = false;
+                cContext.drawImage(data, 0, 0);
+                var pixData = cContext.getImageData(0, 0, 256, 256).data;
+                var alt;
+                for ( var y = 0 ; y < 256 ; y++ ){
+                    heights = [];
+                    for ( var x = 0 ; x < 256 ; x++ ){
+                        var addr = ( x + y * 256 ) * 4;
+                        var R = pixData[ addr ];
+                        var G = pixData[ addr + 1 ];
+                        var B = pixData[ addr + 2 ];
+                        var A = pixData[ addr + 3 ];
+                        if ( R == 128 && G == 0 && B == 0 ){
+                            alt = 0;
+                        } else {
+//                          alt = (R << 16 + G << 8 + B);
+                            alt = (R * 65536 + G * 256 + B);
+                            if ( alt > 8388608 ){
+                                alt = ( alt - 16777216 );
+                            }
+                            alt = alt * 0.01;
+                        }
+                        heights.push(alt);
+                    }
+                    heightCSV.push(heights);
                 }
-                heightCSV[i] = heights;
+            } else {
+                var LF = String.fromCharCode(10);
+                var lines = data.split(LF);
+                for (var i=0; i<lines.length; i++){
+                    heights = lines[i].split(",");
+                    for (var j=0; j<heights.length; j++){
+                        if (heights[j] == "e") heights[j] = 0;
+                    }
+                    heightCSV[i] = heights;
+                }
             }
 
             var whm = self._heightmapWidth;
