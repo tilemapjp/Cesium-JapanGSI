@@ -6,19 +6,23 @@ var
     defineProperties = Cesium.defineProperties,
     loadText = Cesium.loadText,
     loadImage = Cesium.loadImage,
+	fetchText = Cesium.Resource.fetchText,
+	fetchImage = Cesium.Resource.fetchImage,
     throttleRequestByServer = Cesium.throttleRequestByServer,
     Event = Cesium.Event,
     Credit = Cesium.Credit,
     WebMercatorTilingScheme = Cesium.WebMercatorTilingScheme,
     HeightmapTerrainData = Cesium.HeightmapTerrainData,
     TerrainProvider = Cesium.TerrainProvider,
+	TileAvailability = Cesium.TileAvailability,
     when = Cesium.when;
 /**/
     "use strict";
 
     var trailingSlashRegex = /\/$/;
     var defaultCredit = new Credit('国土地理院');
-    var GSI_MAX_TERRAIN_LEVEL = 15;
+	// ISSUE1: Since Level 15 does not cover the whole country of Japan, it seems that there are cases where altitude becomes 0 when sampleTerrainMostDetailed is used. On the other hand, in terrain rendering, the problem does not rise by fallback.
+    var GSI_MAX_TERRAIN_LEVEL = 15; 
 
     var JapanGSITerrainProvider = function JapanGSITerrainProvider(options) {
         options = defaultValue(options, {});
@@ -26,13 +30,21 @@ var
         this._usePngData = defaultValue(options.usePngData,true);
         var url;
         if ( this._usePngData ){
-            url = defaultValue(options.url, 'https://cyberjapandata.gsi.go.jp/xyz/dem_png'); // use https to disable google chrome's data saver for prevent bluring imagg.
-            this._loadDataFunction = loadImage;
+            url = defaultValue(options.url, 'https://cyberjapandata.gsi.go.jp/xyz/dem'); // use https to disable google chrome's data saver for prevent bluring imagg.
+        	if ( loadImage ){
+	            this._loadDataFunction = loadImage;
+        	} else {
+        		this._fetchDataFunction = fetchImage;
+        	}
         } else {
             url  = defaultValue(options.url, '//cyberjapandata.gsi.go.jp/xyz/dem');
-            this._loadDataFunction = loadText;
+        	if ( loadText ){
+	            this._loadDataFunction = loadText;
+        	} else {
+        		this._fetchDataFunction = fetchText;
+        	}
         }
-
+    	
 /*
         if (!trailingSlashRegex.test(url)) {
             url = url + '/';
@@ -44,7 +56,15 @@ var
         this._heightPower = defaultValue(options.heightPower , 1);
 
         this._tilingScheme = new WebMercatorTilingScheme({numberOfLevelZeroTilesX:2});
-
+    	
+    	this._readyPromise = when.defer();
+    	this._readyPromise.resolve(true);
+    	
+    	this._availability = new TileAvailability(this._tilingScheme, GSI_MAX_TERRAIN_LEVEL);
+    	for ( var i = 0 ; i < GSI_MAX_TERRAIN_LEVEL ; i++){
+    		this._availability.addAvailableTileRange(i+1, -65536 , -65536 , 65536 , 65536);
+    	}
+    	
         this._heightmapWidth = 32;
         this._demDataWidth   = 256;
 
@@ -84,7 +104,7 @@ var
 
         var url;
         if ( usePngData ){
-            url = this._url + (level == 15 ? '5a' : '') +
+            url = this._url + (level == 15 ? '5a_png' : '_png') +
                 '/' + level + '/' + x + '/' + y + '.png';
         } else {
             url = this._url + (level == 15 ? '5a' : '') +
@@ -109,7 +129,18 @@ var
                 promise = this._loadDataFunction(url);
             }
         } else {
-            promise = this._loadDataFunction(url, null, new Cesium.Request({throttle:true}));
+        	if ( this._loadDataFunction ){
+        		// ISSUE2: If a large number of points are requested with sampleTerrain or sampleTerrainMostDetailed, there seems to be a problem that no more queries are made with this throttle number as the upper limit.
+        		promise = this._loadDataFunction(url, null, new Cesium.Request({throttle:true}));
+//            	promise = this._loadDataFunction(url);
+        	} else {
+        		promise = this._fetchDataFunction(
+        			{
+        				url: url,
+        				request: new Cesium.Request({throttle:true})
+        			}
+        		);
+        	}
         }
 
         var self = this;
@@ -213,6 +244,18 @@ var
                 return this._tilingScheme;
             }
         },
+    	
+    	readyPromise : { 
+    		get : function() { 
+    			return this._readyPromise.promise; 
+    		} 
+    	},
+    	
+    	availability : { 
+    		get : function() { 
+    			return this._availability;
+    		}
+    	},
 
         ready : {
             get : function() {
